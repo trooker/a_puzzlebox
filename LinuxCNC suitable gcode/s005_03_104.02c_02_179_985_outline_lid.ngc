@@ -1,0 +1,307 @@
+%
+; s005_01_104.02d_01_179_983_lid.ngc
+
+;
+; Copyright © 1988-2021 by Abbott Analytical Products. All Rights Reserved.
+;
+; This gcode porgram describes the surface operation for the lid
+; of the puzzleBox 
+;
+; 210415_tr 03 Absorb branch changes
+; 210409_tr 01d_02 Tweaked the modifed drill op by adding safego at end
+;             > Added milling to represent the milling of the upper and lower
+;               trinagluar corners and the mid-section polygon.
+;             > Added navigation milestone markers
+; 210408_tr 01c_02 Updated drill op to reflect T18
+;           Dropped the contour/dressuptag
+; 210406_tr 01b_02 Flatten contour
+; 210406_tr 01a_02 Delete tab cuts and reduce contour depth for bandsaw cut.
+;           Delete contour outline at testdepth
+;           Relocate Drill op. Set xyVel to 25
+; 210405_tr 02> Added call to subroutine o100
+; 210403_tr 01> Initial conversion from raw FeedCAD _00_ version
+;             > Added % two places
+;             > Replaced values with safego, xyVel, zVel, tabVel and testdepth
+;             > Adjust tooltable T value to SIM/AST tool table
+;                   T3 to T21 dremel scribe engraver 
+;                   T10  to T18 1/4 router bit longshank 
+
+#<safego>    =  0.2000
+#<xyVel>     = 25;72; 36.0000  ;15.0000
+#<zVel>      =  3.9000
+#<tabVel>    = 9.4500
+#<testdepth> = -0.0450
+
+
+(Exported by FreeCAD)
+(Post Processor: linuxcnc_post)
+(Output Time:2021-04-02 22:11:35.985538)
+(begin preamble)
+G40G49G80G61G54G90G20F30S1000 ; 
+G20
+
+
+o100 sub
+  G0 Z0.2   ;Z#<safego>
+  G53 G0 X0 Y0 Z0 (rapid move to machine home)
+  G04 P5.0	; wait for 3.0 seconds
+ (MSG, Check Outline dimensions.)
+ (MSG, Decide to abort or continue.)
+ (MSG, Waiting for you to clear M108 Image)        
+  M108
+  G04 P5.0	; wait for 5.0 seconds
+  G0  Z0.2   ;Z#<safego>
+(End of Depth Cut Check)
+  o100 endsub
+;invoked by o100 call (call the subroutine here)
+
+
+(begin operation: T21: T21 Dremel Scribe)
+(machine: not set, in/min)
+(T21: T21 Dremel Scribe)
+M6 T21
+M3 S300
+(finish operation: T21: T21 Dremel Scribe)
+(begin operation: TestContourBox)
+(machine: not set, in/min)
+(TestContourBox)
+(Uncompensated Tool Path)
+G0 Z#<safego>
+(MSG, Basic BLock Outline)
+G0 X5.3033 Y1.7678
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<zVel>
+G1 X7.0711 Y-0.0000 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y-3.5355 Z#<testdepth> F#<xyVel>
+G1 X0.0000 Y-0.0000 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y3.5355 Z#<testdepth> F#<xyVel>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G0 Z#<safego>
+(MSG, Mark the Lower No Cut Region)
+G0 X5.8926 Y-1.1785
+G1 X5.8926 Y-1.1785 Z#<testdepth> F#<zVel>
+G1 X4.7140 Y-2.3570 Z#<testdepth> F#<xyVel>
+G1 X2.3571 Y-2.3571 Z#<testdepth> F#<xyVel>
+G1 X1.1785 Y-1.1785 Z#<testdepth> F#<xyVel>
+G1 X5.8926 Y-1.1785 Z#<testdepth> F#<xyVel>
+G0 Z#<safego>
+(MSG, Mark the Upper No Cut Region)
+G0 X5.3033 Y1.7678
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<zVel>
+G1 X5.8926 Y1.1785 Z#<testdepth> F#<xyVel>
+G1 X1.1785 Y1.1785 Z#<testdepth> F#<xyVel>
+G1 X2.3571 Y2.3571 Z#<testdepth> F#<xyVel>
+G1 X4.7140 Y2.3570 Z#<testdepth> F#<xyVel>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G0 Z#<safego>
+(finish operation: TestContourBox)
+(begin operation: TestContourTab)
+(machine: not set, in/min)
+(TestContourTab)
+G0 Z#<safego>
+(finish operation: TestContourTab)
+
+
+(MSG, Bore Drill Operation)
+(begin operation: Drilling001)
+(machine: not set, in/min)
+(Drilling001)
+(Begin Drilling)
+G0 X6.0000 Y0.0000 Z#<safego>
+G1 X6.0000 Y0.0000 Z#<testdepth> F#<zVel> 
+G0 X6.0000 Y0.0000 Z#<safego>
+(finish operation: Drilling001)
+
+(MSG, Continue if you want to see the Cut Regions Displayed by Closing the Next Window)
+o100 call
+
+
+
+
+(begin operation: T18: 1/4 Dia Longshaft002)
+(machine: not set, in/min)
+(T18: 1/4 Dia Longshaft002)
+(MSG, Ignore the Tool Change Process, But Close the Dialogue Window)
+M6 T18
+M3 S300
+(finish operation: T18: 1/4 Dia Longshaft002)
+(begin operation: Pocket_Shape005)
+(machine: not set, in/min)
+(Pocket_Shape005)
+G0 Z#<safego>
+(MSG, Mark the Perimeter and Offset of Upper Cut Region)
+G0 X3.9842 Y2.9222
+G1 X3.9842 Y2.9222 Z#<testdepth> F#<zVel>
+G1 X4.4328 Y2.4735 Z#<testdepth> F#<xyVel>
+G1 X2.6383 Y2.4736 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y3.3708 Z#<testdepth> F#<xyVel>
+G1 X3.9842 Y2.9222 Z#<testdepth> F#<xyVel>
+G0 X3.9842 Y2.9222 Z#<safego>
+G0 X3.8194 Y2.7574 Z#<safego>
+G0 X3.8194 Y2.7574 Z0.1700
+G1 X3.8194 Y2.7574 Z#<testdepth> F#<zVel>
+G1 X3.8703 Y2.7065 Z#<testdepth> F#<xyVel>
+G1 X3.2008 Y2.7066 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y3.0413 Z#<testdepth> F#<xyVel>
+G1 X3.8194 Y2.7574 Z#<testdepth> F#<xyVel>
+G0 X3.8194 Y2.7574 Z#<safego>
+G0 X3.7296 Y2.7648 Z#<safego>
+G0 X3.7296 Y2.7648 Z0.1700
+G1 X3.7296 Y2.7648 Z#<testdepth> F#<zVel>
+G1 X3.3414 Y2.7648 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y2.9589 Z#<testdepth> F#<xyVel>
+G1 X3.7296 Y2.7648 Z#<testdepth> F#<xyVel>
+G0 X3.7296 Y2.7648 Z#<safego>
+G0 X3.5890 Y2.8230 Z#<safego>
+G0 X3.5890 Y2.8230 Z0.1700
+G1 X3.5890 Y2.8230 Z#<testdepth> F#<zVel>
+G1 X3.4821 Y2.8230 Z#<testdepth> F#<xyVel>
+G2 X3.5890 Y2.8230 Z#<testdepth> I0.0535 J-0.0000 F#<xyVel>
+G0 Z#<safego>
+(MSG, Mark the Perimeter and Offset of Cut Mid-Region)
+G0 X6.3740 Y0.5323
+G1 X6.3740 Y0.5323 Z#<testdepth> F#<zVel>
+G1 X6.9063 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X5.8443 Y-1.0620 Z#<testdepth> F#<xyVel>
+G1 X4.4987 Y-1.0620 Z#<testdepth> F#<xyVel>
+G1 X4.4756 Y-1.0524 Z#<testdepth> F#<xyVel>
+G1 X2.5955 Y-1.0524 Z#<testdepth> F#<xyVel>
+G1 X2.5755 Y-1.0620 Z#<testdepth> F#<xyVel>
+G1 X1.2268 Y-1.0620 Z#<testdepth> F#<xyVel>
+G1 X0.1648 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X1.2268 Y1.0620 Z#<testdepth> F#<xyVel>
+G1 X1.9778 Y1.0620 Z#<testdepth> F#<xyVel>
+G1 X1.9841 Y1.0646 Z#<testdepth> F#<xyVel>
+G1 X5.2839 Y1.0646 Z#<testdepth> F#<xyVel>
+G1 X5.2902 Y1.0620 Z#<testdepth> F#<xyVel>
+G1 X5.8443 Y1.0620 Z#<testdepth> F#<xyVel>
+G1 X6.3740 Y0.5323 Z#<testdepth> F#<xyVel>
+G0 X6.3740 Y0.5323 Z#<safego>
+G0 X6.2093 Y0.3675 Z#<safego>
+G0 X6.2093 Y0.3675 Z0.1700
+G1 X6.2093 Y0.3675 Z#<testdepth> F#<zVel>
+G1 X6.5768 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X5.7478 Y-0.8290 Z#<testdepth> F#<xyVel>
+G1 X4.5175 Y-0.8290 Z#<testdepth> F#<xyVel>
+G1 X4.4756 Y-0.8194 Z#<testdepth> F#<xyVel>
+G1 X2.5955 Y-0.8194 Z#<testdepth> F#<xyVel>
+G1 X2.5679 Y-0.8290 Z#<testdepth> F#<xyVel>
+G1 X1.3233 Y-0.8290 Z#<testdepth> F#<xyVel>
+G1 X0.4943 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X1.3233 Y0.8290 Z#<testdepth> F#<xyVel>
+G3 X2.0009 Y0.8316 Z#<testdepth> I0.3273 J3.0080 F#<xyVel>
+G1 X5.2787 Y0.8316 Z#<testdepth> F#<xyVel>
+G1 X5.2902 Y0.8290 Z#<testdepth> F#<xyVel>
+G1 X5.7478 Y0.8290 Z#<testdepth> F#<xyVel>
+G1 X6.2093 Y0.3675 Z#<testdepth> F#<xyVel>
+G0 X6.2093 Y0.3675 Z#<safego>
+G0 X6.0445 Y0.2028 Z#<safego>
+G0 X6.0445 Y0.2028 Z0.1700
+G1 X6.0445 Y0.2028 Z#<testdepth> F#<zVel>
+G1 X6.2473 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X5.6513 Y-0.5960 Z#<testdepth> F#<xyVel>
+G1 X4.5268 Y-0.5960 Z#<testdepth> F#<xyVel>
+G1 X4.4756 Y-0.5864 Z#<testdepth> F#<xyVel>
+G1 X2.5955 Y-0.5864 Z#<testdepth> F#<xyVel>
+G1 X2.5185 Y-0.5960 Z#<testdepth> F#<xyVel>
+G1 X1.4198 Y-0.5960 Z#<testdepth> F#<xyVel>
+G1 X0.8238 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X1.4198 Y0.5960 Z#<testdepth> F#<xyVel>
+G2 X5.6513 Y0.5960 Z#<testdepth> I2.1118 J-401.3609 F#<xyVel>
+G1 X6.0445 Y0.2028 Z#<testdepth> F#<xyVel>
+G0 X6.0445 Y0.2028 Z#<safego>
+G0 X5.8797 Y0.0380 Z#<safego>
+G0 X5.8797 Y0.0380 Z0.1700
+G1 X5.8797 Y0.0380 Z#<testdepth> F#<zVel>
+G1 X5.9178 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X5.5548 Y-0.3630 Z#<testdepth> F#<xyVel>
+G1 X4.5391 Y-0.3630 Z#<testdepth> F#<xyVel>
+G1 X4.4756 Y-0.3534 Z#<testdepth> F#<xyVel>
+G1 X2.5955 Y-0.3534 Z#<testdepth> F#<xyVel>
+G1 X2.5444 Y-0.3630 Z#<testdepth> F#<xyVel>
+G1 X1.5163 Y-0.3630 Z#<testdepth> F#<xyVel>
+G1 X1.1533 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X1.5163 Y0.3630 Z#<testdepth> F#<xyVel>
+G2 X5.5548 Y0.3630 Z#<testdepth> I2.0161 J-326.0998 F#<xyVel>
+G1 X5.8797 Y0.0380 Z#<testdepth> F#<xyVel>
+G0 X5.8797 Y0.0380 Z#<safego>
+G0 X5.5883 Y0.0000 Z#<safego>
+G0 X5.5883 Y0.0000 Z0.1700
+G1 X5.5883 Y0.0000 Z#<testdepth> F#<zVel>
+G1 X5.4583 Y-0.1300 Z#<testdepth> F#<xyVel>
+G1 X4.5453 Y-0.1300 Z#<testdepth> F#<xyVel>
+G1 X4.4756 Y-0.1204 Z#<testdepth> F#<xyVel>
+G1 X2.5955 Y-0.1204 Z#<testdepth> F#<xyVel>
+G1 X2.5274 Y-0.1300 Z#<testdepth> F#<xyVel>
+G1 X1.6128 Y-0.1300 Z#<testdepth> F#<xyVel>
+G1 X1.4828 Y0.0000 Z#<testdepth> F#<xyVel>
+G1 X1.6128 Y0.1300 Z#<testdepth> F#<xyVel>
+G3 X2.0031 Y0.1326 Z#<testdepth> I0.1825 J1.8992 F#<xyVel>
+G1 X5.2711 Y0.1326 Z#<testdepth> F#<xyVel>
+G1 X5.2902 Y0.1300 Z#<testdepth> F#<xyVel>
+G2 X5.5883 Y0.0000 Z#<testdepth> I0.0840 J-0.2140 F#<xyVel>
+G0 X5.5883 Y0.0000 Z#<safego>
+G0 X5.5059 Y0.0000 Z#<safego>
+G0 X5.5059 Y0.0000 Z0.1700
+G1 X5.5059 Y0.0000 Z#<testdepth> F#<zVel>
+G2 X5.4342 Y-0.0717 Z#<testdepth> I-0.0717 J0.0000 F#<xyVel>
+G1 X4.5483 Y-0.0717 Z#<testdepth> F#<xyVel>
+G1 X4.4756 Y-0.0621 Z#<testdepth> F#<xyVel>
+G1 X2.5955 Y-0.0621 Z#<testdepth> F#<xyVel>
+G1 X2.5444 Y-0.0717 Z#<testdepth> F#<xyVel>
+G1 X1.6369 Y-0.0718 Z#<testdepth> F#<xyVel>
+G2 X1.6369 Y0.0718 Z#<testdepth> I0.0000 J0.0718 F#<xyVel>
+G2 X5.4342 Y0.0717 Z#<testdepth> I1.8963 J-238.6331 F#<xyVel>
+G2 X5.5059 Y0.0000 Z#<testdepth> I0.0000 J-0.0717 F#<xyVel>
+G0 X5.5059 Y0.0000 Z#<safego>
+G0 X5.4235 Y0.0000 Z#<safego>
+G0 X5.4235 Y0.0000 Z0.1700
+G1 X5.4235 Y0.0000 Z#<testdepth> F#<zVel>
+G2 X5.4100 Y-0.0135 Z#<testdepth> I-0.0135 J0.0000 F#<xyVel>
+G1 X4.5483 Y-0.0135 Z#<testdepth> F#<xyVel>
+G1 X4.4756 Y-0.0039 Z#<testdepth> F#<xyVel>
+G1 X2.5955 Y-0.0039 Z#<testdepth> F#<xyVel>
+G1 X2.5444 Y-0.0135 Z#<testdepth> F#<xyVel>
+G1 X1.6611 Y-0.0135 Z#<testdepth> F#<xyVel>
+G2 X1.6611 Y0.0135 Z#<testdepth> I0.0000 J0.0135 F#<xyVel>
+G2 X5.4100 Y0.0135 Z#<testdepth> I1.8723 J-221.1017 F#<xyVel>
+G2 X5.4235 Y0.0000 Z#<testdepth> I0.0000 J-0.0135 F#<xyVel>
+G0 Z#<safego>
+(MSG, Mark the Perimeter and Offset of Lower Cut Region)
+G0 X4.4328 Y-2.4735
+G1 X4.4328 Y-2.4735 Z#<testdepth> F#<zVel>
+G1 X3.5355 Y-3.3708 Z#<testdepth> F#<xyVel>
+G1 X2.6383 Y-2.4736 Z#<testdepth> F#<xyVel>
+G1 X4.4328 Y-2.4735 Z#<testdepth> F#<xyVel>
+G0 X4.4328 Y-2.4735 Z#<safego>
+G0 X3.8703 Y-2.7065 Z#<safego>
+G0 X3.8703 Y-2.7065 Z0.1700
+G1 X3.8703 Y-2.7065 Z#<testdepth> F#<zVel>
+G1 X3.5355 Y-3.0413 Z#<testdepth> F#<xyVel>
+G1 X3.2008 Y-2.7066 Z#<testdepth> F#<xyVel>
+G1 X3.8703 Y-2.7065 Z#<testdepth> F#<xyVel>
+G0 X3.8703 Y-2.7065 Z#<safego>
+G0 X3.7296 Y-2.7648 Z#<safego>
+G0 X3.7296 Y-2.7648 Z0.1700
+G1 X3.7296 Y-2.7648 Z#<testdepth> F#<zVel>
+G1 X3.5355 Y-2.9589 Z#<testdepth> F#<xyVel>
+G1 X3.3414 Y-2.7648 Z#<testdepth> F#<xyVel>
+G1 X3.7296 Y-2.7648 Z#<testdepth> F#<xyVel>
+G0 X3.7296 Y-2.7648 Z#<safego>
+G0 X3.5890 Y-2.8230 Z#<safego>
+G0 X3.5890 Y-2.8230 Z0.1700
+G1 X3.5890 Y-2.8230 Z#<testdepth> F#<zVel>
+G2 X3.4821 Y-2.8230 Z#<testdepth> I-0.0535 J-0.0000 F#<xyVel>
+G1 X3.5890 Y-2.8230 Z#<testdepth> F#<xyVel>
+G0 Z#<safego>
+(finish operation: Pocket_Shape005)
+(begin operation: Drilling001)
+(machine: not set, in/min)
+
+
+
+(begin operation: TagDressup001)
+(machine: not set, in/min)
+(finish operation: TagDressup001)
+(begin postamble)
+G00 G53 X0 Y0 Z0  M2  ;that's all;
+%

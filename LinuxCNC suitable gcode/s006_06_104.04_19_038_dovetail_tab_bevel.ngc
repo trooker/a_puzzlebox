@@ -1,0 +1,639 @@
+%
+;s006_03_104.04_19_038_dovetailBox_tab.ngc
+
+; Copyright © 1988-2021 by Abbott Analytical Products. All Rights Reserved.
+;
+; This gcode program describes the surface groove operation for tabs of a 
+;   trick box using dovetail desgin slots/tabs.  This program assumes the 
+;   tab "channel" has already been milled such that there is sufficient
+;   material remaining on the workpiece to a bevel slot face.  Once the
+;   bevel tab face is cut then 180 degree rotate and realign for complement. 
+;   Remove extraneous postioning at 0,0, safego and just move from home to 
+;   fadZero edge of cut (point where the edge of the dovetail just misses 
+;   the stock material in the "channel".
+;
+; NOTE4: Uncomment call o100 to gain aooportunity to "abort" prior to cuts
+;
+; NOTE3: See Spreadsheet: calcul_dovetail_cuts_210208_1406.ods or most recent.
+;
+; NOTE2: Program developed based upon 104.03_02.1635_496.998_dovetailBox_slot.ngc
+;
+; NOTE1: Shank DIA = .2245 in  
+;          Play to Edge   .2500 - .2245/2 = .137725 safe edge drop
+; 210518_tr s006_06 Return bevely1..4 to s006_03 values and adjust gap again
+;             Measured gap as .1007 by forcing to one side.  
+;             a = (gap x Sqrt(2)) ==> .0353553
+;             Measured gap with one side pressed to extreme gap = .1007
+;             SideGap = .1007/2 = .05035 per side
+;             y-gap for one side = sidegap / sqrt(2)
+;             y-gap = .05035 / sqrt (2) = .03560
+; 210515_tr s006_05 Tweak the lid boxBase -/+ .0315 adjustment to bevels
+;           using 0.031466 = (.089 / 2) x Sqrt(2)
+; 210512_tr s006_04 On fly adjustments of lid to boxBase -/+ .109 adjustment to bevels
+; 210415_tr s006_03 Retrofit to conform with the clear cut of channels using FreeCAD
+;           179.983 version using cutting block rectanlges.
+; 210412_tr s006_02 Reset First Cut for fore and aft mill markings
+;           > Clear cut channels and correct o15x numbering
+;           > See ";**** Begin channel clearing"
+; 210412_tr s006_01 Redesign CAM process to execute bevels first.  
+; 210412_tr 19 Reconstitiuted from 104.04_19+14
+;           19+14 Reconstituted 19+14 from 20+17
+;           20+17 Insert the msg, waits, etc. for o100 and first cut
+; 210410_tr 20+16 Almost good run for +15:
+;             > Issue with bevel3 cut order.  It should be reversed
+;             > Extend the xMax length run just a bit on both ends to clear the block
+; 210410_tr 20+15 Return to cutterBackout placement
+; 210410_tr 20+14 Corrected issue with bevel4_y bundle which is collapsed on leading corner
+;             > Dropped extraneous toolpaths to next bevel bundle and home.
+; 210410_tr 20+13 cut msg halts
+;             > Remove the second verification at the xMax
+;             > Corrected issue with bevel3_y during first cut check.
+;             > Created variable #<cutterBackout> to provide a uniform displacement of 
+;                the cutter's edge to prevent encroaching on the Border Line and NoCut Regions
+; 210409_tr 19+13 Stable look.  Need to test for cutting.
+; 210409_tr 19+12 Work with bevel3 testdepth test points
+;             > Decreased Bevel4 Y kickback from 1 to .3 times
+;             > Jockied bevel values to protect Bourder Lines and No CUt Regions
+;               from the dovetail cutter cutting edges.
+; 210408_tr 19+2 Established that the control sequence is correct but the 
+;           X-fadinout needs to be flipped.
+;           Adjusted length of bevels and locus.
+;           Switched the beveles 1 to 2 and 4 to 3 to accommodate reverse of shape
+;           Set correct tab fad to -/+0.2273 at max Z depth of channel
+; 210407_tr 19 > Jockey bevel locus to reduce delta between
+;            narrowest point/last layer and the corresponding borderline.
+;            > Flip layer cut order by decrementing loopkntr 
+;            and resetting loopstopper
+;            > Added border line check for bevel3 & bevel4
+;            > Introduced o101 sub to replace earlier o152..4
+; 210405_tr 18 Continue to jockey bevel locus.
+; 210403_tr 17 Jockey with 179.985 ngc and outline
+;           > Replace abstract bevel3 and bevel4
+; 210331_tr 16 > Use testdepth approach after scribe mark of channel to probe 
+;                proper locus of level1 bevel1 and bevel2.
+;              > Jockey bevel1 and bevel2 locus
+; 210330_tr Rest xyVel to 15
+; 210329_tr 15 > Move Bevel1-Bevel2 to support tab along center
+;              > Re-set max X to 5.000
+; 210328_tr 14 > Cut Bevel3-4 from program
+;              > Swap slot Bevel1_y and Bevel2_y
+; 210313_tr 13 > Jockey locus of tabs
+; 210307_tr 12 > Modified the verify subroutine calls for testing
+;           > Readjust Y to avoid conflect in channel
+;           > Remove extraneous o100 cut check for first cut.
+;           > Temporarily commneted-out calls to o100
+;           > Added NOTE4.
+; 210306_tr 11 > 
+;           > Testing demonstrated a need to move the dovetail cuts closer
+;           to the centerline of each channel.  The shift from each 
+;           cut seems to be in the range of 7.5/32  or .23475 in.
+;           from .175 to .238
+;           > Incorporated #<shift2CL> to shift start point/line to center
+;           of channel.  This guarantees proper narrow and widest for box
+;                    
+;           ______         ____________
+;                / Channel \   Depth
+;               /_____+_____\ -0.2272 for tab
+;                     CL
+;
+; 210222_tr 10 Redajust tab kickback to safe zones away from tabs
+; 210221_tr 09 Adjust kickback to channel for bevel cuts stroke reset
+; 210218_tr 08 Added o100 sub. See: 104.01_11_199.878_038_dovetailBox_box.ngc
+;           tweak the o100 subroutine to re-home and wait at each 
+;           feature completion to allow time for mechanical check of stock/mill
+; 210213_tr 07 Jockey lengths
+; 210212_tr 06 Update first cut waiting message " 3 seconds "  before proceeding
+;           Jockey Bevel start position but keep orientation
+; 210211_tr 05 Copied 104.03_09_038....
+; 210211_tr 04 Add reference to NOTE2 Spreadsheet for z_depthMax and related
+;           fadinpout.
+; 210203_tr 03 Test correction on typo
+;           Set production yMax to 5
+; 210202_tr 02 Adjusted speeds of "Check edge of first cut"
+; 210123_tr 01 Initial addaption from 104.03_02.....
+;           Added edge cut check sequence
+
+; Depth to y_fadinout for Channel
+;       Z        Y fadinout of bevel cut  -/+ depends on orientation
+;  0    0	     0            disregard
+;  1   -0.05	-0.0289
+;  2   -0.1	    -0.0577
+;  3   -0.15	-0.0866
+;  4   -0.2	    -0.1155 <<== Drop to here then start
+;  5   -0.25	-0.1443 <<== Last depth before corrupted edge
+;  6   -0.3	    -0.1732
+;  7   -0.35	-0.2021
+;  8   #<z_depthMax>  #<y_fadinoutMax>  for slot -0.4000 -0.2309    for tab -0.3937	-0.2273
+    
+
+
+#<safego>    =  0.2000
+#<xyVel>     = 25 ;72  ;15   ;72; 36; 15.0000
+#<zVel>      =  3.9000
+#<cutter_Radius> = .250
+#<z_depth>     = 0 ;Cutting depth  cum stepdown
+#<z_depthMax>  = -0.3937 ; See spreadsheet
+#<y_fadinoutMax> = -0.2273
+#<y_fadinout>  = 0 
+#<y_fadOffset> = #<cutter_Radius> ;.4 ;.2500   ; DIA of cutter / 2
+#<face_clearance>  = 0 ; holding 0.0025  ; Shave a bit for clearance between slot/tab face.
+#<loopknt>     = 1 ;8 ; 1 
+#<loopStopper> = 9; 0 ; 9 ;eight +1  depthcharges starting at -0.050
+#<stepdown>    = 0.050
+;align so as not to cut stock material
+#<x0>          = [- #<cutter_Radius> ]  ; back-off the DIA/2
+#<z0>          = 0   ; tooltouch-off
+#<xMax1n4>   =  2.5 ; [3.3 + #<y_fadOffset>] ; v15   3.3  ;Short set post touch-off1   ; 3 to 5 ; box stock is 5.0000
+#<xMax2n3>   =  5.8 ;[5.0 + #<y_fadOffset>]  ; Long
+
+
+
+
+
+#<testdepth> = -0.0450
+#<kickback>  = .3500  ; +/- depending on orientation of bevel
+#<shift2CL>  = .23475 ; provides proper slant shape of bevel.  measured y-axis fudgefactor from original to proposed
+#<tweakgap>  = .035035 ;restore value  .085535;  .05050+.035035   measured delta and calculated
+; variables used for slots version but set to Zero for tabs
+#<y_fad4mill>  = #<cutter_Radius>  ; Additional back-off DIA/2 of cutter
+#<testpoleydelta> = 0.0  ; Delta between Border Line for NoCut Region to matching bevel bundle.
+#<cutterBackout> = .250;#<cutter_Radius> ;Move +/- from border to insure cutting edge does
+;                     not encroach over the Border Line or enter the NoCut regions
+
+; Used to Position the bevel cut bundle 
+; by experimentation and measurement
+;s006_05; #<bevel1_y> =  2.2545 ; 2.3635  - .109
+#<bevel1_y> =  2.3635  ; s006_3
+#<bevel1_x> =  2.4; 2.0; .2 ;.5; 2.0; 1.8; 1.6
+#<bevel1_y> = [[#<bevel1_y>] - [#<shift2CL>]]
+#<bevel1_y> = [[#<bevel1_y>] - [#<tweakgap>]]
+
+
+; by experimentation and measurement
+;s006_05; #<bevel2_y> = 0.7715 ; .6625  + .109
+#<bevel2_y> = .6625  ; s006_3
+#<bevel2_x> = .75  
+#<bevel2_y> = [[#<bevel2_y>] + [#<shift2CL>]]
+#<bevel2_y> = [[#<bevel2_y>] + [#<tweakgap>]]
+
+
+; by experimentation and measurement
+;s006_05; #<bevel3_y> = -1.5028
+#<bevel3_y> = -1.3938  ; s006_3  
+#<bevel3_x> = .75 
+#<bevel3_y> = [[#<bevel3_y>] + [#<shift2CL>]]
+#<bevel3_y> = [[#<bevel3_y>] - [#<tweakgap>]]
+
+; by experimentation and measurement
+#<bevel4_y> =  -2.3873  ; s006_3
+;s006_05; #<bevel4_y> = -2.2783
+#<bevel4_x> = 2.4
+#<bevel4_y> = [[#<bevel4_y>] - [#<shift2CL>]]
+#<bevel4_y> = [[#<bevel4_y>] + [#<tweakgap>]]
+; end tab original 
+
+
+;https://linuxcnc.org/docs/2.6/html/gcode/o-code.html
+o100 sub
+   G0 Z0.2   ;Z#<safego>
+   G53 G0 X0 Y0 Z0 (rapid move to machine home)
+   G04 P5.0	; wait for 3.0 seconds
+  (MSG, Check Home Position.)
+  (MSG, Decide to abort or continue.)
+  (MSG, Waiting for you to clear M108 Image)        
+   M108
+   G04 P5.0	; wait for 5.0 seconds
+   G0  Z#<safego>
+(End of Depth Cut Check)
+o100 endsub
+;invoked by o100 call (call the subroutine here)
+
+
+(Exported by FreeCAD)
+(Post Processor: linuxcnc_post)
+(Output Time:2021-01-20 16:35:36.962899)
+(begin preamble)
+G40G49G80G61G54G90G20F30S1000 ; test 180924
+G20
+(begin operation: T27: 60 dovetailcuttet)
+(machine: not set, in/min)
+(T27: 60 dovetailcuttet)
+M6 T27
+M3 S0
+(finish operation: T27: 60 dovetailcutter)
+(begin operation: Surface)
+(machine: not set, in/min)
+
+(Check edge of first cut)
+G0 Z#<safego>
+#<y_fad4mill>  = #<cutter_Radius>
+#<testpoleydelta> = 0.0
+
+G1 Y[[#<y_fadOffset>] + [#<bevel1_y>] + #<y_fad4mill>] X[[#<x0>] + [#<bevel1_x>]] F#<xyVel>
+G1 Y[[#<y_fadOffset>] + [#<bevel1_y>] + #<y_fad4mill>] X[[#<x0>] + [#<bevel1_x>]] Z#<testdepth> F#<zVel>
+(MSG, First edge surface cut check.)
+(MSG, Waiting for you to clear M107 Image)        
+M107
+G04 P5.0	; wait for 3.0 seconds
+G0 Z#<safego>
+G1 Y[[#<y_fadOffset>] + [#<bevel1_y>]+ #<y_fad4mill>] X[[#<xMax1n4>] +[#<bevel1_x>]] F#<xyVel>
+G1 Y[[#<y_fadOffset>] + [#<bevel1_y>]+ #<y_fad4mill>] X[[#<xMax1n4>] +[#<bevel1_x>]] Z#<testdepth> F#<zVel>
+(MSG, Second edge surface cut check at yMax.)
+(MSG, Waiting for you to clear M107 Image)        
+M107
+G04 P5.0	; wait for 3.0 seconds
+G0 Z#<safego>
+G00 G53 X0 Y0 Z0 
+#<y_fad4mill>  = -#<cutter_Radius>
+#<testpoleydelta> = 0.0
+
+G0 Z#<safego>
+     (MSG, Set test depth pole for Bevel2.)
+     G1 Y[[#<y_fadOffset >] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<x0>] + [#<bevel2_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<x0>] + [#<bevel2_x>]] Z#<testdepth> F#<zVel>
+     (MSG, First edge surface cut check.)
+     (MSG, Waiting  3 seconds for you to clear M107 Image)        
+     M107
+    G04 P5.0	; wait for 3.0 seconds
+     G0 Z#<safego>
+     G1 Y[[#<y_fadOffset>] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<xMax2n3>] +[#<bevel2_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset>] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<xMax2n3>] +[#<bevel2_x>]] Z#<testdepth> F#<zVel>
+     (MSG, Second edge surface cut check at xMax.)
+     (MSG, Waiting 3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+G0 Z#<safego>
+G00 G53 X0 Y0 Z0 
+
+#<y_fad4mill>  = 0; #<cutter_Radius>
+#<testpoleydelta> = 0.0
+
+G0 Z#<safego>
+     (MSG, Set test depth pole for Bevel3.)
+     G1 Y[[#<y_fadOffset >] + [[#<bevel3_y>] - #<y_fad4mill>] - #<testpoleydelta>] X[[#<x0>] + [#<bevel3_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] + [[#<bevel3_y>] - #<y_fad4mill>] - #<testpoleydelta>] X[[#<x0>] + [#<bevel3_x>]] Z#<testdepth> F#<zVel>
+     (MSG, First edge surface cut check.)
+     (MSG, Waiting  3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+     G0 Z#<safego>
+     G1 Y[[#<y_fadOffset>] + [[#<bevel3_y>] - #<y_fad4mill>] - #<testpoleydelta>] X[[#<xMax2n3>] +[#<bevel3_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset>] + [[#<bevel3_y>] - #<y_fad4mill>] - #<testpoleydelta>] X[[#<xMax2n3>] +[#<bevel3_x>]] Z#<testdepth> F#<zVel>
+     (MSG, Second edge surface cut check at xMax.)
+     (MSG, Waiting 3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+     G0 Z#<safego>
+     G00 G53 X0 Y0 Z0 
+#<y_fad4mill>  = -#<cutter_Radius>
+#<testpoleydelta> = 0.0
+     
+G0 Z#<safego>
+    G1 Y[[#<y_fadOffset>] + [#<bevel4_y>] +  #<y_fad4mill>] X[[#<x0>] + [#<bevel4_x>]] F#<xyVel>
+    G1 Y[[#<y_fadOffset>] + [#<bevel4_y>] + #<y_fad4mill>] X[[#<x0>] + [#<bevel4_x>]] Z#<testdepth> F#<zVel>
+    (MSG, First edge surface cut check.)
+    (MSG, Waiting for you to clear M107 Image)        
+    M107
+    G04 P5.0	; wait for 3.0 seconds
+    G0 Z#<safego>
+    G1 Y[[#<y_fadOffset>] + [#<bevel4_y>] + #<y_fad4mill>] X[[#<xMax1n4>] +[#<bevel4_x>]] F#<xyVel>
+    G1 Y[[#<y_fadOffset>] + [#<bevel4_y>] + #<y_fad4mill>] X[[#<xMax1n4>] +[#<bevel4_x>]] Z#<testdepth> F#<zVel>
+    (MSG, Second edge surface cut check at yMax.)
+    (MSG, Waiting for you to clear M107 Image)        
+    M107
+    G04 P5.0	; wait for 3.0 seconds
+    G0 Z#<safego>
+    G00 G53 X0 Y0 Z0 
+    (MSG, Measure first edge surface cut.)
+    (MSG, Decide to abort or continue.)
+    (MSG, Waiting  3 seconds for you to clear M108 Image)        
+    M108
+    G04 P5.0	; wait for 3.0 seconds
+    G0 Z#<safego>
+    G00 G53 X0 Y0 Z0 
+
+(End of Depth Cut Check)
+
+
+
+
+
+G0 Z#<safego>
+;why G1 X#<y_fadOffset> y#<x0> Z#<safego> F#<xyVel>
+
+;#Start Bevel 1  ////
+;Y[ *_y + [#<bevel1_y>]] X[  *_x +[#<bevel1_x>]]
+G0 Z#<safego>
+;why G1 Y[[#<y_fadOffset>] + [#<bevel1_y>]] X[[#<x0>] +[#<bevel1_x>]]  Z#<safego> F#<xyVel>
+
+
+o1 while [#<loopknt> lt #<loopStopper>]
+
+o151 if[#<loopknt> EQ 1]
+(MSG, Pass 1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = 0.2273   ;0.0289
+o151 elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    = -0.1
+#<y_fadinout> = 0.2021   ; 0.0577
+o151 elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = 0.1732   ; 0.0866
+o151 elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = 0.1443    ; 0.1155
+o151 elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    =  -0.25	
+#<y_fadinout> = 0.1155   ; 0.1443
+o151 elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    =  -0.3	    
+#<y_fadinout> = 0.0866  ; 0.1732
+o151 elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    =  -0.35	
+#<y_fadinout> = 0.0577  ; 0.2021
+o151 else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>   
+#<y_fadinout> = 0.0289   ; 0.2273
+o151 endif
+
+
+
+
+#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>]]
+
+
+;Y[ + [#<bevel1_y>]] X[   + [#<bevel1_x>]]
+
+
+G1 Y[ [#<shift2CL>] + [#<y_fadOffset>] + [#<bevel1_y>] + #<cutterBackout>] X[[#<x0>]   + [#<bevel1_x>]] Z#<safego>   F#<xyVel>
+;G1 Y[[#<y_fadinout>]  + [#<bevel1_y>] + #<cutterBackout>] X[[#<x0>]   + [#<bevel1_x>]] Z#<safego>  F#<xyVel>
+G1 Y[[#<y_fadinout>]   + [#<bevel1_y>] + #<cutterBackout>] X[[#<x0>]   + [#<bevel1_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel1_y>] + #<cutterBackout>] X[[#<xMax1n4>] + [#<bevel1_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel1_y>] + [2*[#<kickback>]+  [#<y_fadOffset>]]]  X[[#<xMax1n4>] +[#<bevel1_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel1_y>] + [2*[#<kickback>] + [#<y_fadOffset>]]]   X[[#<xMax1n4>] +[#<bevel1_x>]]  Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [#<bevel1_y>] + #<cutterBackout>] X[[#<x0>]   + [#<bevel1_x>]] Z#<safego>   F#<xyVel>
+
+
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o1 endwhile
+
+;G0 Z#<safego>
+;why G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+
+;# Start Bevel 2   \\\\
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     =  1;8  ;1 
+
+;;;210204
+;Reset variables
+
+o2 while [#<loopknt> lt #<loopStopper>]
+
+o152 if[#<loopknt> EQ 1]
+(MSG, Pass 1)
+#<z_depth>    = -0.05
+#<y_fadinout> = -0.2273    ; -0.0289
+#<y_fadinoutZero> = #<y_fadinout>
+o152 elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    = -0.1
+#<y_fadinout> = -0.2021  ; -0.0577
+o152 elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = -0.1732    ; -0.0866
+o152 elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = -0.1443   ; -0.1155
+o152 elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = -0.1155  ; -0.1443
+o152 elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = -0.0866  ; -0.1732
+o152 elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = -0.0577   ; -0.2021
+o152 else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>
+#<y_fadinout> = -0.0289   ; -0.2273
+
+o152 endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>]]
+
+G1 Y[-[#<shift2CL>] +[#<y_fadOffset>] + [#<bevel2_y>] - #<cutterBackout>]  X[[#<x0>]+[#<bevel2_x>]] Z#<safego>   F#<xyVel>
+;G1 Y[[#<y_fadinout>]  + [#<bevel2_y>]- #<cutterBackout>]  X[[#<x0>]+[#<bevel2_x>]] Z#<safego>  F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel2_y>]- #<cutterBackout>]  X[[#<x0>]+[#<bevel2_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel2_y>]- #<cutterBackout>]  X[[#<xMax2n3>]+[#<bevel2_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel2_y>] - [ [1*[#<kickback>]]  + [#<y_fadOffset>]]] X[[#<xMax2n3>]+ [#<bevel2_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel2_y>] - [ [1*[#<kickback>]]  + [#<y_fadOffset>]]] X[[#<xMax2n3>]+ [#<bevel2_x>]]  Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [#<bevel2_y>]- #<cutterBackout>]  X[[#<x0>]+[#<bevel2_x>]] Z#<safego>  F#<xyVel>  
+
+
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o2 endwhile
+
+;G0 Z#<safego>
+; delete intermediate stop to bevel 3 
+; G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+;#Start Bevel 3  ////
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     = 1; 8 ;1 
+
+;;;210204
+;Reset variables
+
+o3 while [#<loopknt> lt #<loopStopper>]
+
+;o153 issue
+;o153 issue
+o153 if[#<loopknt> EQ 1]
+(MSG, Pass 1)
+#<z_depth>    = -.05 
+#<y_fadinout> = -0.0289 
+#<y_fadinoutZero> = #<y_fadinout>
+o153 elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    =  -0.1
+#<y_fadinout> =   -0.0577
+o153 elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = -0.0866
+o153 elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    =  -0.2	    
+#<y_fadinout> =  -0.1155
+o153 elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    = -0.25	
+#<y_fadinout> =   -0.1443
+o153 elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> =  -0.1732
+o153 elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    =  -0.35	
+#<y_fadinout> = -0.2021
+o153 else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>
+#<y_fadinout> = -0.2273
+
+o153 endif
+
+
+
+
+#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>]]
+
+G1 Y[[#<y_fadOffset>] + [#<bevel3_y>] + #<cutterBackout>]  X[[#<x0>]+[#<bevel3_x>]] Z#<safego>   F#<xyVel>
+;G1 Y[[#<y_fadinout>]  + [#<bevel3_y>]+ #<cutterBackout>]  X[[#<x0>]+[#<bevel3_x>]] Z#<safego>  F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel3_y>]+ #<cutterBackout>]  X[[#<x0>]+[#<bevel3_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel3_y>]+ #<cutterBackout>]  X[[#<xMax2n3>]+[#<bevel3_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel3_y>] + [[2*[#<kickback>]] + [#<y_fadOffset>]]]     X[[#<xMax2n3>]+ [#<bevel3_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel3_y>] + [[2*[#<kickback>]] +[#<y_fadOffset>]] ]    X[[#<xMax2n3>]+ [#<bevel3_x>]]  Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [#<bevel3_y>]+ #<cutterBackout>]  X[[#<x0>]+[#<bevel3_x>]] Z#<safego>    F#<xyVel>
+
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o3 endwhile
+
+;G0 Z#<safego>
+; delete intermediate stop to bevel4
+; G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+;Replace with 19+13 bevel4
+;# Start Bevel 4    \\\\
+
+#<loopknt>     = 1; 8 ;1 
+
+;Y[ *_y + [#<bevel4_y>]] X[  *_x +[#<bevel4_x>]]
+G0 Z#<safego>
+; Delete jump to bevel4
+; G1 Y[[#<y_fadOffset>] + [#<bevel4_y>]] X[[#<x0>] +[#<bevel4_x>]]  Z#<safego> F#<xyVel>
+
+
+o4 while [#<loopknt> lt #<loopStopper>]
+
+
+
+o154 if[#<loopknt> EQ 1]
+(MSG, Pass 1 )
+#<z_depth>    = -0.05
+#<y_fadinout> = -0.2273  ; -0.0289
+o154 elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    = -0.1
+#<y_fadinout> = -0.2021  ; -0.0577
+o154 elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = -0.1732    ; -0.0866
+o154 elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = -0.1443   ; -0.1155
+o154 elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = -0.1155   ; -0.1443
+o154 elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = -0.0866  ;-0.1732
+o154 elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = -0.0577 ;  -0.2021
+o154 else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>	
+#<y_fadinout> = -0.0289   ;-0.2273
+
+o154 endif
+
+
+
+
+
+
+#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>]]
+
+G1 Y[-[#<shift2CL>] +[#<y_fadOffset>] + [#<bevel4_y>]- #<cutterBackout>]  X[[#<x0>]+[#<bevel4_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel4_y>]- #<cutterBackout>]  X[[#<x0>]+[#<bevel4_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel4_y>]- #<cutterBackout>]  X[[#<xMax1n4>]+[#<bevel4_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel4_y>] - [ [.3*[#<kickback>]]  + [#<y_fadOffset>]]] X[[#<xMax1n4>]+ [#<bevel4_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<bevel4_y>] - [ [.3*[#<kickback>]]  + [#<y_fadOffset>]]] X[[#<xMax1n4>]+ [#<bevel4_x>]]  Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [#<bevel4_y>]- #<cutterBackout>]  X[[#<x0>]+[#<bevel4_x>]] Z#<safego>  F#<xyVel>  
+
+
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o4 endwhile
+
+;G0 Z#<safego>
+; delete intermediate stop to home
+; G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+
+
+(finish operation: Surface)
+(begin postamble)
+G00 G53 X0 Y0 Z0  M2  ;that's all
+%

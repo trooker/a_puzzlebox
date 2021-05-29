@@ -1,0 +1,887 @@
+%
+;s002_01_104.03_25_038_dovetailBox_tab.ngc
+;
+; Copyright © 1988-2021 by Abbott Analytical Products. All Rights Reserved.
+;
+; This gcode program describes the surface groove operation for slots of a 
+;   trick box using dovetail desgin slots/tabs.  This program also clear cuts
+;   the corresponding slot channel.
+;   the stock material in the "channel".
+;
+; NOTE3: Uncomment call o100 to gain an oportunity to "abort" prior to cuts
+;
+; NOTE2: See Spreadsheet: calcul_dovetail_cuts_210208_1406.ods or most recent.
+;
+; NOTE1: Shank DIA = .2245 in  
+;          Play to Edge   .2500 - .2245/2 = .137725 safe edge drop
+; 210414_tr 03 Merge the t002_13 "flat" cuts.
+; 210413_tr s002_03 Return to Clear cut channels.  Attemtping to use current bevely/x__? 
+;              with changes to allow straight milling and return to Z=safgo through 
+;              residual channel debris.
+; 210412_tr s002_02 Reset First Cut for fore and aft mill markings
+;           > Clear cut channels and correct o15x numbering
+;           > See ";**** Begin channel clearing"
+; 210412_tr s002_01 Recalibrate process steps
+; 210406_tr 26 Set bevel?_y locus
+;           > Redo firsst cut sequence.  
+; 210403_tr 25 Jockey with 179.985 ngc and outline
+;           > Replace abstract bevel3 and bevel4
+; 210331_tr_24 Added check of testdepth with 106/107
+; 210330_tr 23 Adjust using the  +/- #<testpoleydelta> to touch edge of slot
+; 210330_tr Rest xyVel to 15
+; 210388_tr 22 > Jockey location of bevel1 and bevel2
+;           > Temporary drop "play with bevel3 & bevel4
+;           > Relocate slot testdepth probe to touc non-channel
+;           > Increase dev xyVel to 36 from produciton 15
+; 210327_tr 21 > Using adjusted width fo channel
+; 210326_tr 20 > Consider and adjust  1/4 longshaft and dovetail cutter dia
+;           > Set testdepth pole for tweaking locus od cutter.
+; 210326_tr 19 > Adjust placement of dovetail cutter dia slots
+; 210318_tr 18 > SIM testing showed issue with bevel2 (drooped #<loopknt>   = 1)
+; 210313_tr 17 > Jockey locus of slots
+;           > Reposition Bevel 1 and Bevel r2 processing in flow.
+; 210313_tr 16 >Renamed bevel1 and bevel2 on bottom to match that of lid 
+; 210307_tr 15 > Modified the verify subroutine calls for testing
+;           > Readjust Y to avoid conflect in channel
+;           > Remove extraneous o100 cut check for first cut.
+;           > Temporarily commneted-out calls to o100
+;           > Added NOTE3 and NOTE4.
+; 210306_tr 14 > Testing demonstrated a need to move the dovetail cuts closer
+;           to the centerline of each channel.  The shift from each 
+;           cut seems to be in the range of 7.5/32  or .23475 in.
+;           from .175 to .238
+;           > Incorporated #<shift2CL> to shift start point/line to center
+;           of channel.  This guarantees proper narrow and widest for box
+;                     CL
+;           ______    +    ____________
+;                / Channel \ 
+;               /___________\
+; 210221_tr 13 Adjust kickback to channel for bevel cuts stroke reset
+; 210218_tr 12 Added o100 sub. See: 104.01_11_199.878_038_dovetailBox_box.ngc
+;           tweak the o100 subroutine to re-home and wait at each 
+;           feature completion to allow time for mechanical check of stock/mill
+; 210213_tr 11 Jockey lengths
+; 210212_tr 10 Adjust slots to orient and start location of 
+;           Narrow edge to z=Zero for milling
+; 210211_tr 09 Set the max z_depthMax to .4000 
+;           y_fadinoutMax to .2309
+;           Added NOTE2
+;           Correct bevel1 and bevel3 fadinout
+;           Adjust slow of bevels to match tabs
+; 210204_tr 06 Added second bevel angle
+;           Rename X/Y #<> to fit Switch
+;           Revised zDepth max to -.4000
+;           Set off-set distances for moving to cut face
+; 210203_tr 05 Test correction on typo 
+;           Set production yMax to 5
+;           Switch X/ Coordinates
+;           Adjust speed zVel/xyVel for moves XY
+;           Adjust length of xMax post touch-off
+; 210202_tr 04 Adjusted speeds of "Check edge of first cut"
+; 210123_tr 03.2111 Redo dimension on x zero fad. 
+;           Dropped x_FadZero.  Set x_fadOffset 
+;           Added edge cut check sequence
+; 210122_tr 02.1635 Developed subroutine for cutting 8 layers of grooves.
+;           02.1335 Test using 1, 2, and then three groove cuts.
+; 210121_tr 02 Implement subroutine control 
+;           Correct typos to allow simulation 
+; 210118_tr 01 Initial import fromFreeCad
+;           Added % two places
+;           Replaced 0.2000 safe Z height with #<safego>
+;           Changed T11 to T27 of stepper.tbl  4 places
+;           Replaced  15.000 and 3.9000 with #<xyVel> and #<zVel>
+
+    
+
+
+#<safego>    =  0.2000
+#<xyVel>     = 25 ; 15   ;36;  for dev only   for production use: 15.0000
+#<zVel>      =  3.9000
+
+#<z_depth>     = 0 ;Cutting depth  cum stepdown
+#<z_depthMax>  = -0.4000 ; See spreadsheet
+#<y_fadinoutMax> = -0.2309
+#<y_fadinout>  = 0 
+#<y_fadOffset> = .2500    ;DIA of cutter / 2  and  .233 /2  1/4 longshaft
+#<y_fad4mill> = 0.1165   ;  .233 /2  1/4 longshaft
+#<loopknt>     = 1 
+#<loopStopper> = 9 ;eight +1  depthcharges starting at -0.050
+#<stepdown>    = 0.050
+;align so as not to cut stock
+#<x0>          = 0  ;-.50000 ;  0.26275      ; DIA of cutter / 2  ==> 26275
+#<z0>          = 0   ; tooltouch-off
+#<xMax4Short>   = 3.3  ;Short set post touch-off1   ; 3 to 5 ; box stock is 5.0000
+#<xMax4Long>   =  5.5  ; Long
+#<testdepth> = -0.045 ;210406   -0.010
+#<testpoleydelta> = .15 ; + for odd/ - for even
+#<kickback>  =  .3500  ; +/- depending on orientation of bevel
+#<shift2CL>  = .23475 ; measured y-axis fudgefactor from original to proposed
+
+
+#<bevel1_y> =  1.7985 ; = 2.5735 +.125
+#<bevel1_x> =  2.0; .2 ;.5; 2.0; 1.8; 1.6
+#<bevel1_y> = [[#<bevel1_y>] - [#<shift2CL>]]
+
+
+#<bevel2_y> = 0.9875;   0.3375; = 0.4625 - .125;.875 - .4125; 
+#<bevel2_x> = 1.05  ; .2;.8;.6; 1.6
+#<bevel2_y> = [[#<bevel2_y>] + [#<shift2CL>]]
+
+
+
+; Custom fitting via SIM
+#<bevel3_y> = -1.7988
+;−1.2988   ; = -1.4238 + .15
+#<bevel3_x> = 1.05; .8 ; .6  ;1.6
+#<bevel3_y> = [[#<bevel3_y>] + [#<shift2CL>]]
+
+#<bevel4_y> = -2.2523
+;-2.7538 = -2.5973 -0.125
+#<bevel4_x> =2.0 ; 1.6
+#<bevel4_y> = [[#<bevel4_y>] - [#<shift2CL>]]
+
+;https://linuxcnc.org/docs/2.6/html/gcode/o-code.html
+o100 sub
+  G0 Z0.2   ;Z#<safego>
+  G53 G0 X0 Y0 Z0 (rapid move to machine home)
+  G04 P5.0	; wait for 3.0 seconds
+ (MSG, Check Home Position.)
+ (MSG, Decide to abort or continue.)
+ (MSG, Waiting for you to clear M108 Image)        
+  M108
+  G04 P5.0	; wait for 5.0 seconds
+  G0  Z0.2   ;Z#<safego>
+(End of Depth Cut Check)
+  o100 endsub
+;invoked by o100 call (call the subroutine here)
+
+
+
+(Exported by FreeCAD)
+(Post Processor: linuxcnc_post)
+(Output Time:2021-01-20 16:35:36.962899)
+(begin preamble)
+G40G49G80G61G54G90G20F30S1000 ; test 180924
+G20
+(begin operation: T27: 60 dovetailcuttet)
+(machine: not set, in/min)
+(T27: 60 dovetailcuttet)
+M6 T27
+M3 S0
+(finish operation: T27: 60 dovetailcuttet)
+(begin operation: Surface)
+(machine: not set, in/min)
+
+;See spreadsheet
+;       Z         Y-fadinout
+;  0    0	     0            disregard
+;  1   -0.05	-0.0289
+;  2   -0.1	    -0.0577
+;  3   -0.15	-0.0866
+;  4   -0.2	    -0.1155 <<== Drop to here then start
+;  5   -0.25	-0.1443 <<== Last depth before corrupted edge
+;  6   -0.3	    -0.1732
+;  7   -0.35	-0.2021
+;  8   #<z_depthMax>  #<y_fadinoutMax>  for slot -0.4000 -0.2309    for tab -0.3937	-0.2273
+
+
+    G00 G53 X0 Y0 Z0 
+     G0 Z#<safego>
+
+ 
+     (MSG, Set test depth pole for Bevel1.)
+     G1 Y[[#<y_fadOffset >] + [[#<bevel1_y>] + #<y_fad4mill>] + #<testpoleydelta>] X[[#<x0>] + [#<bevel1_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] + [[#<bevel1_y>] + #<y_fad4mill>] + #<testpoleydelta>] X[[#<x0>] + [#<bevel1_x>]] Z#<testdepth> F#<zVel>
+     G0 Z#<safego>
+     (MSG, Back edge surface cut check at .)
+     (MSG, Waiting  3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+
+;     G1 Y[[#<y_fadOffset >] + [[#<bevel1_y>] + #<y_fad4mill>] + #<testpoleydelta>] X[#<xMax4Short> + [#<bevel1_x>]] F#<xyVel>
+;     G1 Y[[#<y_fadOffset >] + [[#<bevel1_y>] + #<y_fad4mill>] + #<testpoleydelta>] X[#<xMax4Short> + [#<bevel1_x>]] Z#<testdepth> F#<zVel>
+
+
+     (MSG, Set test depth pole for Bevel2.)
+     G1 Y[[#<y_fadOffset >] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<x0>] + [#<bevel2_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<x0>] + [#<bevel2_x>]] Z#<testdepth> F#<zVel>
+     (MSG, First edge surface cut check.)
+     (MSG, Waiting  3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+     G0 Z#<safego>
+     G1 Y[[#<y_fadOffset>] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<xMax4Long>] +[#<bevel2_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset>] + [[#<bevel2_y>] + #<y_fad4mill>] - #<testpoleydelta>] X[[#<xMax4Long>] +[#<bevel2_x>]] Z#<testdepth> F#<zVel>
+     (MSG, Back edge surface cut check at xMax.)
+     (MSG, Waiting 3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+     G0 Z#<safego>
+     
+     (MSG, Set test depth pole for Bevel3.)
+     G1 Y[[#<y_fadOffset >] + [#<bevel3_y>] - #<y_fad4mill>] X[[#<x0>] + [#<bevel3_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] + [#<bevel3_y>] - #<y_fad4mill>] X[[#<x0>] + [#<bevel3_x>]] Z#<testdepth> F#<zVel>
+     G0 Z#<safego>
+     (MSG, First edge surface cut check.)
+     (MSG, Waiting  3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+      G1 Y[[#<y_fadOffset >] + [#<bevel3_y>] - #<y_fad4mill>] X[[#<xMax4Long>] + [#<bevel3_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] +  [#<bevel3_y>] - #<y_fad4mill>] X[[#<xMax4Long>] + [#<bevel3_x>]] Z#<testdepth> F#<zVel>
+     G0 Z#<safego>
+     (MSG, First edge surface cut check.)
+     (MSG, Waiting  3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+     
+     
+     (MSG, Set test depth pole for Bevel4.)
+     G0 Z#<safego>
+     G1 Y[[#<y_fadOffset >] + [#<bevel4_y>] + #<y_fad4mill>] X[[#<x0>] + [#<bevel4_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] + [#<bevel4_y>] + #<y_fad4mill>] X[[#<x0>] + [#<bevel4_x>]] Z#<testdepth> F#<zVel>
+     G0 Z#<safego>
+
+     (MSG, Set test depth pole for Bevel3.)
+     G0 Z#<safego>
+     G1 Y[[#<y_fadOffset >] + [#<bevel4_y>] + #<y_fad4mill>] X[[#<xMax4Short>]+ [#<bevel4_x>]] F#<xyVel>
+     G1 Y[[#<y_fadOffset >] + [#<bevel4_y>] + #<y_fad4mill>] X[[#<xMax4Short>]+ [#<bevel4_x>]] Z#<testdepth> F#<zVel>
+    (MSG, First edge surface cut check.)
+     (MSG, Waiting  3 seconds for you to clear M107 Image)        
+     M107
+     G04 P5.0	; wait for 3.0 seconds
+    
+     
+     G00 G53 X0 Y0 Z0 
+     (MSG, Measure first edge surface cut.)
+     (MSG, Decide to abort or continue.)
+     (MSG, Waiting  3 seconds for you to clear M108 Image)        
+     M108
+(End of Depth Cut Check)
+
+
+
+;# Start Bevel 1   \\\\
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     = 1 
+
+;;;210204
+;Reset variables
+
+o1 while [#<loopknt> lt #<loopStopper>]
+o151if[#<loopknt> EQ 1]
+(MSG, Pass 1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = 0.0289
+o151elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    = -0.1
+#<y_fadinout> = 0.0577
+o151elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = 0.0866
+o151elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = 0.1155
+o151elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = 0.1443
+o151elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = 0.1732
+o151elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = 0.2021
+o151else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = -[#<y_fadinoutMax>] ;   --0.2309
+
+o151endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [[#<y_fadOffset>]+ #<y_fad4mill>]+ #<testpoleydelta>]
+;     G1 Y[[#<y_fadOffset >] + [[#<bevel1_y>] + #<y_fad4mill>] + #<testpoleydelta>] X[[#<x0>] + [#<bevel1_x>]] F#<xyVel>
+;     G1 Y[[#<y_fadOffset >] + [[#<bevel1_y>] + #<y_fad4mill>] + #<testpoleydelta>] X[[#<x0>] + [#<bevel1_x>]] Z#<testdepth> F#<zVel>
+
+G1 Y[[#<y_fadOffset>] + [[#<bevel1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>]  X[[#<x0>]+[#<bevel1_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel1_y>]]  X[[#<x0>]+[#<bevel1_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel1_y>]]  X[[#<xMax4Short>]+[#<bevel1_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<bevel1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>] - [#<kickback>]] X[[#<xMax4Short>]+ [#<bevel1_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<bevel1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>] - [#<kickback>]] X[[#<xMax4Short>]+ [#<bevel1_x>]] Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [[#<bevel1_y>] - #<y_fad4mill> ]+ #<testpoleydelta>]  X[[#<x0>]+[#<bevel1_x>]] Z#<safego>  F#<xyVel>  
+
+;G1 Y[[[#<y_fadOffset>] + [#<bevel2_y>]+#<y_fad4mill>] + [#<kickback>]] X[[#<xMax4Long>]+ [#<bevel2_x>]] Z#<z_depth>  F#<xyVel>
+;G1 Y[[[#<y_fadOffset>] + [#<bevel2_y>]+#<y_fad4mill>] + [#<kickback>]] X[[#<xMax4Long>]+ [#<bevel2_x>]] Z#<safego>  F#<zVel>
+;G1 Y[[#<y_fadOffset>] + [#<bevel2_y>]+#<y_fad4mill>] X[[#<x0>]   + [#<bevel2_x>]] Z#<safego>   F#<xyVel> 
+
+
+
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o1 endwhile
+
+;G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+
+
+;#Start Bevel 2  ////
+;Y[ *_y + [#<bevel2_y>]] X[  *_x +[#<bevel2_x>]]
+
+#<loopknt>     = 1 
+
+
+G0 Z#<safego>
+G1 Y[[#<y_fadOffset >] + [#<bevel2_y>]] X[[#<x0>] +[#<bevel2_x>]]  Z#<safego> F#<xyVel>
+
+
+o2 while [#<loopknt> lt #<loopStopper>]
+o152 if[#<loopknt> EQ 1]
+(MSG, Pass 1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = -0.0289
+o152 elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    = -0.1
+#<y_fadinout> = -0.0577
+o152 elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = -0.0866
+o152 elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = -0.1155
+o152 elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = -0.1443
+o152 elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = -0.1732
+o152 elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = -0.2021
+o152 else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = #<y_fadinoutMax> ;-0.2309
+
+o152 endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [[#<y_fadOffset>]+#<y_fad4mill>] - #<testpoleydelta>]
+
+
+;Y[ + [#<bevel2_y>]] X[   + [#<bevel2_x>]]
+
+; 210318  Begin adjust for bevel2 issue
+G1 Y[[#<y_fadOffset>] + [[#<bevel2_y>]+#<y_fad4mill>]- #<testpoleydelta>]  X[[#<x0>]   + [#<bevel2_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel2_y>]] X[[#<x0>]   + [#<bevel2_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel2_y>]] X[[#<xMax4Long>] + [#<bevel2_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<bevel2_y>]+#<y_fad4mill>] - #<testpoleydelta>] + [#<kickback>]] X[[#<xMax4Long>]+ [#<bevel2_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<bevel2_y>]+#<y_fad4mill>]  - #<testpoleydelta>]+ [#<kickback>]] X[[#<xMax4Long>]+ [#<bevel2_x>]] Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [[#<bevel2_y>]+#<y_fad4mill>] - #<testpoleydelta>] X[[#<x0>]   + [#<bevel2_x>]] Z#<safego>   F#<xyVel> 
+
+; 210318  End adjust for bevel2 issue
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o2 endwhile
+
+
+; See/Add 0001_slot_Bevel3_4_abstract.ngc
+;G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+
+;#Start Bevel 3  ////
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     = 1 
+
+;;;210204
+;Reset variables
+
+o3 while [#<loopknt> lt #<loopStopper>]
+o153 if[#<loopknt> EQ 1]
+(MSG, Pass 1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = 0.0289
+o153 elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    = -0.1
+#<y_fadinout> = 0.0577
+o153 elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = 0.0866
+o153 elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = 0.1155
+o153 elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = 0.1443
+o153 elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = 0.1732
+o153 elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = 0.2021
+o153 else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = -[#<y_fadinoutMax>] ;--0.2309
+
+o153 endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>] - #<y_fad4mill>]
+
+G1 Y[[#<y_fadOffset>] + [#<bevel3_y>]- #<y_fad4mill>]  X[[#<x0>]+[#<bevel3_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel3_y>]]  X[[#<x0>]+[#<bevel3_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel3_y>]]  X[[#<xMax4Long>]+[#<bevel3_x>]] Z#<z_depth>  F#<xyVel>
+
+;210307  original bevel3_y locus
+;G1 Y[[#<bevel3_y>] - [#<kickback>]]                      X[[#<xMax4Long>]+ [#<bevel3_x>]] Z#<z_depth>  F#<xyVel>
+;G1 Y[[#<bevel3_y>] - [#<kickback>]]                      X[[#<xMax4Long>]+ [#<bevel3_x>]] Z#<safego>  F#<zVel>
+;210307  ln 234 235
+G1 Y[[#<y_fadOffset>] + [[#<bevel3_y>] - [#<kickback>]]- #<y_fad4mill>] X[[#<xMax4Long>]+ [#<bevel3_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<y_fadOffset>] + [[#<bevel3_y>] - [#<kickback>]]- #<y_fad4mill>] X[[#<xMax4Long>]+ [#<bevel3_x>]] Z#<safego>  F#<zVel>
+
+
+G1 Y[[#<y_fadOffset>] + [#<bevel3_y>]- #<y_fad4mill>]  X[[#<x0>]+[#<bevel3_x>]] Z#<safego>  F#<xyVel>  
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o3 endwhile
+
+;G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+;# Start Bevel 4    \\\\
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     = 1 
+
+;;;210204
+;Reset variables
+
+o4 while [#<loopknt> lt #<loopStopper>]
+o154if[#<loopknt> EQ 1]
+(MSG, Pass 1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = -0.0289
+o154elseif [#<loopknt> EQ 2]
+(MSG, Pass 2)
+#<z_depth>    = -0.1
+#<y_fadinout> = -0.0577
+o154elseif[#<loopknt> EQ 3]
+(MSG, Pass 3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = -0.0866
+o154elseif[#<loopknt> EQ 4]
+(MSG, Pass 4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = -0.1155
+o154elseif[#<loopknt> EQ 5]
+(MSG, Pass 5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = -0.1443
+o154elseif[#<loopknt> EQ 6]
+(MSG, Pass 6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = -0.1732
+o154elseif[#<loopknt> EQ 7]
+(MSG, Pass 7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = -0.2021
+o154else
+(MSG, Pass 8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = [#<y_fadinoutMax>] ;-0.2273
+
+o154endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>]+ #<y_fad4mill>]
+
+G1 Y[[#<y_fadOffset>] + [#<bevel4_y>]+ #<y_fad4mill>]  X[[#<x0>]+[#<bevel4_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel4_y>]]  X[[#<x0>]+[#<bevel4_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [#<bevel4_y>]]  X[[#<xMax4Short>]+[#<bevel4_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<y_fadOffset>] +[[#<bevel4_y>] + [#<kickback>]]+ #<y_fad4mill>] X[[#<xMax4Short>]+ [#<bevel4_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[#<y_fadOffset>] +[[#<bevel4_y>] + [#<kickback>]]+ #<y_fad4mill>] X[[#<xMax4Short>]+ [#<bevel4_x>]] Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [#<bevel4_y>]+ #<y_fad4mill>]  X[[#<x0>]+[#<bevel4_x>]] Z#<safego>   F#<xyVel> 
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o4 endwhile
+
+
+
+
+
+
+G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+
+
+
+;**** Begin channel clearing
+
+;**** Begin channel clearing
+
+; new flat1..4_x/y replace bevel1..4_x/y
+#<flat1_y> =  1.7985 ; = 2.5735 +.125
+#<flat1_x> =  2.0; .2 ;.5; 2.0; 1.8; 1.6
+#<flat1_y> = [[#<flat1_y>] - [#<shift2CL>]]
+
+
+#<flat2_y> = 0.9875;   0.3375; = 0.4625 - .125;.875 - .4125; 
+#<flat2_x> = 1.05  ; .2;.8;.6; 1.6
+#<flat2_y> = [[#<flat2_y>] + [#<shift2CL>]]
+
+
+
+; Custom fitting via SIM
+#<flat3_y> = -2.1888 ; by eye-2.1488 ; = -1.9988 .15 by eye ; was in 10 -1.7988
+#<flat3_x> = 1.05; .8 ; .6  ;1.6
+#<flat3_y> = [[#<flat3_y>] + [#<shift2CL>]]
+
+#<flat4_y> = -2.3975 ; by eye-2.4023 ; -2.2523 -.15
+#<flat4_x> =2.0 ; 1.6
+#<flat4_y> = [[#<flat4_y>] - [#<shift2CL>]]
+
+
+
+
+;# Start Flat 1   \\\\
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     = 1 
+
+;;;210204
+;Reset variables
+
+o5 while [#<loopknt> lt #<loopStopper>]
+o161if[#<loopknt> EQ 1]
+;(MSG, Pass  1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = 0.0289
+o161elseif [#<loopknt> EQ 2]
+;(MSG, Pass  2)
+#<z_depth>    = -0.1
+#<y_fadinout> = 0.0577
+o161elseif[#<loopknt> EQ 3]
+;(MSG, Pass  3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = 0.0866
+o161elseif[#<loopknt> EQ 4]
+;(MSG, Pass  4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = 0.1155
+o161elseif[#<loopknt> EQ 5]
+;(MSG, Pass  5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = 0.1443
+o161elseif[#<loopknt> EQ 6]
+;(MSG, Pass  6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = 0.1732
+o161elseif[#<loopknt> EQ 7]
+;(MSG, Pass  7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = 0.2021
+o161else
+;(MSG, Pass  8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = -[#<y_fadinoutMax>] ;   --0.2309
+
+o161endif
+
+;Test #<y_fadinout> = [[#<y_fadinout>] + [[#<y_fadOffset>]+ #<y_fad4mill>]+ #<testpoleydelta>]
+G1 Y[[#<y_fadOffset>] + [[#<flat1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>]  X[[#<x0>]+[#<flat1_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]  + [[#<flat1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>]  X[[#<x0>]+[#<flat1_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]  + [[#<flat1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>]   X[[#<xMax4Short>]+[#<flat1_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>] - [#<kickback>]] X[[#<xMax4Short>]+ [#<flat1_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat1_y>] + #<y_fad4mill> ]+ #<testpoleydelta>] - [#<kickback>]] X[[#<xMax4Short>]+ [#<flat1_x>]] Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>] + [[#<flat1_y>] - #<y_fad4mill> ]+ #<testpoleydelta>]  X[[#<x0>]+[#<flat1_x>]] Z#<safego>  F#<xyVel>  
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o5 endwhile
+
+;G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+;#Start Flat 2  ////
+;Y[ *_y + [#<flat2_y>]] X[  *_x +[#<flat2_x>]]
+
+#<loopknt>     = 1 
+
+
+G0 Z#<safego>
+G1 Y[[#<y_fadOffset >] + [#<flat2_y>]] X[[#<x0>] +[#<flat2_x>]]  Z#<safego> F#<xyVel>
+
+
+o6 while [#<loopknt> lt #<loopStopper>]
+o162 if[#<loopknt> EQ 1]
+;(MSG, Pass  1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = -0.0289
+o162 elseif [#<loopknt> EQ 2]
+;(MSG, Pass  2)
+#<z_depth>    = -0.1
+#<y_fadinout> = -0.0577
+o162 elseif[#<loopknt> EQ 3]
+;(MSG, Pass  3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = -0.0866
+o162 elseif[#<loopknt> EQ 4]
+;(MSG, Pass  4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = -0.1155
+o162 elseif[#<loopknt> EQ 5]
+;(MSG, Pass  5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = -0.1443
+o162 elseif[#<loopknt> EQ 6]
+;(MSG, Pass  6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = -0.1732
+o162 elseif[#<loopknt> EQ 7]
+;(MSG, Pass  7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = -0.2021
+o162 else
+;(MSG, Pass  8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = #<y_fadinoutMax> ;-0.2309
+
+o162 endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [[#<y_fadOffset>]+#<y_fad4mill>] - #<testpoleydelta>]
+
+
+G1 Y[[#<y_fadOffset>]  + [[#<flat2_y>] + #<y_fad4mill>]  - #<testpoleydelta>]                  X[[#<x0>]   + [#<flat2_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]   + [[#<flat2_y>] + #<y_fad4mill> ] + #<testpoleydelta>]                  X[[#<x0>]   + [#<flat2_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]   + [[#<flat2_y>] + #<y_fad4mill> ] + #<testpoleydelta>]                  X[[#<xMax4Long>] + [#<flat2_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat2_y>] + #<y_fad4mill>]  - #<testpoleydelta>] + [#<kickback>]] X[[#<xMax4Long>]+ [#<flat2_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat2_y>] + #<y_fad4mill>]  - #<testpoleydelta>] + [#<kickback>]] X[[#<xMax4Long>]+ [#<flat2_x>]] Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>]  + [[#<flat2_y>] + #<y_fad4mill>]  - #<testpoleydelta>]                  X[[#<x0>]   + [#<flat2_x>]] Z#<safego>   F#<xyVel> 
+
+; 210318  End adjust for bevel2 issue
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o6 endwhile
+
+
+; See/Add 0001_slot_Flat3_4_abstract.ngc
+;G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+
+;#Start Flat 3  ////
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     = 1 
+
+;;;210204
+;Reset variables
+
+o7 while [#<loopknt> lt #<loopStopper>]
+o163 if[#<loopknt> EQ 1]
+;(MSG, Pass  1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = 0.0289
+o163 elseif [#<loopknt> EQ 2]
+;(MSG, Pass  2)
+#<z_depth>    = -0.1
+#<y_fadinout> = 0.0577
+o163 elseif[#<loopknt> EQ 3]
+;(MSG, Pass  3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = 0.0866
+o163 elseif[#<loopknt> EQ 4]
+;(MSG, Pass  4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = 0.1155
+o163 elseif[#<loopknt> EQ 5]
+;(MSG, Pass  5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = 0.1443
+o163 elseif[#<loopknt> EQ 6]
+;(MSG, Pass  6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = 0.1732
+o163 elseif[#<loopknt> EQ 7]
+;(MSG, Pass  7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = 0.2021
+o163 else
+;(MSG, Pass  8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = -[#<y_fadinoutMax>] ;--0.2309
+
+o163 endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [[#<y_fadOffset>] -#<y_fad4mill>] - #<testpoleydelta>]
+;#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>] - #<y_fad4mill>]
+
+
+G1 Y[[#<y_fadOffset>]  + [[#<flat3_y>] + #<y_fad4mill>]  + #<testpoleydelta>]                  X[[#<x0>]        + [#<flat3_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]   + [[#<flat3_y>] + #<y_fad4mill> ] + #<testpoleydelta>]                  X[[#<x0>]        + [#<flat3_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]   + [[#<flat3_y>] + #<y_fad4mill> ] + #<testpoleydelta>]                  X[[#<xMax4Long>] + [#<flat3_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat3_y>] + #<y_fad4mill>]  + #<testpoleydelta>] - [#<kickback>]] X[[#<xMax4Long>] + [#<flat3_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat3_y>] + #<y_fad4mill>]  + #<testpoleydelta>] - [#<kickback>]] X[[#<xMax4Long>] + [#<flat3_x>]] Z#<safego>   F#<zVel>
+G1 Y[[#<y_fadOffset>]  + [[#<flat3_y>] + #<y_fad4mill>]  + #<testpoleydelta>]                  X[[#<x0>]        + [#<flat3_x>]] Z#<safego>   F#<xyVel> 
+
+
+
+
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o7 endwhile
+
+;G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+G0 Z#<safego>
+;210307   o100 call
+G0 Z#<safego>
+
+
+;# Start Flat 4    \\\\
+;Y[ *_y + [#<beveli_y>]] X[  *_x +[#<beveli_x>]]
+
+
+#<loopknt>     = 1 
+
+;;;210204
+;Reset variables
+
+o8 while [#<loopknt> lt #<loopStopper>]
+o164if[#<loopknt> EQ 1]
+;(MSG, Pass  1 -0.05)
+#<z_depth>    = -0.05
+#<y_fadinout> = -0.0289
+o164elseif [#<loopknt> EQ 2]
+;(MSG, Pass  2)
+#<z_depth>    = -0.1
+#<y_fadinout> = -0.0577
+o164elseif[#<loopknt> EQ 3]
+;(MSG, Pass  3)
+#<z_depth>    = -0.15	
+#<y_fadinout> = -0.0866
+o164elseif[#<loopknt> EQ 4]
+;(MSG, Pass  4)
+#<z_depth>    = -0.2	    
+#<y_fadinout> = -0.1155
+o164elseif[#<loopknt> EQ 5]
+;(MSG, Pass  5)
+#<z_depth>    = -0.25	
+#<y_fadinout> = -0.1443
+o164elseif[#<loopknt> EQ 6]
+;(MSG, Pass  6)
+#<z_depth>    = -0.3	    
+#<y_fadinout> = -0.1732
+o164elseif[#<loopknt> EQ 7]
+;(MSG, Pass  7)
+#<z_depth>    = -0.35	
+#<y_fadinout> = -0.2021
+o164else
+;(MSG, Pass  8)
+#<z_depth>    = #<z_depthMax>    ;-0.40000
+#<y_fadinout> = [#<y_fadinoutMax>] ;-0.2273
+
+o164endif
+
+#<y_fadinout> = [[#<y_fadinout>] + [[#<y_fadOffset>] + #<y_fad4mill>] + #<testpoleydelta>]
+
+;#<y_fadinout> = [[#<y_fadinout>] + [#<y_fadOffset>]+ #<y_fad4mill>]
+
+G1 Y[[#<y_fadOffset>]  + [[#<flat4_y>] + #<y_fad4mill>] + #<testpoleydelta>]                  X[[#<x0>]+[#<flat4_x>]] Z#<safego>   F#<xyVel>
+G1 Y[[#<y_fadinout>]   + [[#<flat4_y>] + #<y_fad4mill>] + #<testpoleydelta>]                  X[[#<x0>]+[#<flat4_x>]] Z#<z_depth>  F#<zVel>
+G1 Y[[#<y_fadinout>]   + [[#<flat4_y>] + #<y_fad4mill>] + #<testpoleydelta>]                  X[[#<xMax4Short>]+[#<flat4_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat4_y>] + #<y_fad4mill>] + #<testpoleydelta>] + [#<kickback>]] X[[#<xMax4Short>]+ [#<flat4_x>]] Z#<z_depth>  F#<xyVel>
+G1 Y[[[#<y_fadOffset>] + [[#<flat4_y>] + #<y_fad4mill>] + #<testpoleydelta>]+ [#<kickback>]] X[[#<xMax4Short>]+ [#<flat4_x>]] Z#<safego>  F#<zVel>
+G1 Y[[#<y_fadOffset>]  + [[#<flat4_y>] + #<y_fad4mill>] + #<testpoleydelta>]                 X[[#<x0>]+[#<flat4_x>]] Z#<safego>   F#<xyVel> 
+
+G0 Z#<safego>   
+    #<loopknt>=[#<loopknt>+1]
+o8 endwhile
+
+
+
+
+
+
+
+; Begin Pulled 2,3,4 from here
+
+
+G0 Z#<safego>
+G1 Y#<y_fadOffset> X#<x0> Z#<safego> F#<xyVel>
+
+
+
+
+
+
+(finish operation: Surface)
+(begin postamble)
+G00 G53 X0 Y0 Z0  M2  ;that's all
+%

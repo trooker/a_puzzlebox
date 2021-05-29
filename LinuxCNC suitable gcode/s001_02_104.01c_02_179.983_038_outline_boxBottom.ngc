@@ -1,0 +1,299 @@
+%
+;s001_02_104.01c_01_179.983_038_boxBottom.ngc
+;
+; Copyright © 1988-2021 by Abbott Analytical Products. All Rights Reserved.
+;
+; This gcode porgram describes the outline for the bottom
+; of the puzzleBox 
+;
+; 210415_tr s001_2 Typos
+; 210412_tr s001_01 Redesign CAM process
+; 210409_tr 01c_02 Corrected typo
+;              > Updated drill op
+;              > Delete extraneous scribe cuts of polygons
+;              > Added ignore T18 tool change
+; 210406_tr 01b_02 Flatten contour, cylinder
+; 210406_tr 01a_02 Delete slot cuts and reduce contour depth for bandsaw cut.
+;           Delete contour outline at testdepth
+;           Relocate Drill op. Set xyVel to 25
+; 210405_tr 02> Added call to subroutine o100
+; 210403_tr 01> Initial conversion from raw FeedCAD 179.983_ version for bottom 
+;               module with the testdepth
+;             > Added % two places
+;             > Replaced values with safego, xyVel, zVel, tabVel and testdepth
+;             > Adjust tooltable T value to SIM/AST tool table
+;                   T3 to T21 dremel scribe engraver 
+;                   T10  to T18 1/4 router bit longshank 
+
+
+
+
+#<safego>    =  0.2000
+#<xyVel>     = 25 ;72; 36.0000  ;15.0000
+#<zVel>      =  3.9000
+#<tabVel>    = 9.4500
+#<testdepth> = -0.0450  ; 210406_1551   was -0.0100
+
+
+
+
+
+(Exported by FreeCAD)
+(Post Processor: linuxcnc_post)
+(Output Time:2021-04-02 22:09:23.507820)
+(begin preamble)
+G40G49G80G61G54G90G20F30S1000 ; 
+G20
+
+o100 sub
+  G0 Z0.2   ;Z#<safego>
+  G53 G0 X0 Y0 Z0 (rapid move to machine home)
+  G04 P5.0	; wait for 3.0 seconds
+ (MSG, Check Outline Dimensions.)
+ (MSG, Decide to abort or continue.)
+ (MSG, Waiting for you to clear M108 Image)        
+  M108
+  G04 P5.0	; wait for 5.0 seconds
+  G0  Z0.2   ;Z#<safego>
+(End of Depth Cut Check)
+  o100 endsub
+;invoked by o100 call (call the subroutine here)
+
+(begin operation: T3: T21 Dremel Scribe001)
+(machine: not set, in/min)
+(T21: T21 Dremel Scribe001)
+M6 T21
+M3 S300
+(finish operation: T21: T21 Dremel Scribe001)
+(begin operation: TestContourBlock)
+(machine: not set, in/min)
+(TestContourBlock)
+(Uncompensated Tool Path)
+G0 Z#<safego>
+G0 X5.3033 Y1.7678
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G1 X7.0711 Y-0.0000 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y-3.5355 Z#<testdepth> F#<xyVel>
+G1 X0.0000 Y-0.0000 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y3.5355 Z#<testdepth> F#<xyVel>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G0 Z#<safego>
+
+(MSG, Mill Lower Slot Perimeter.)
+
+G0 X5.8926 Y-1.1785
+G1 X5.8926 Y-1.1785 Z#<testdepth> F#<xyVel>
+G1 X4.7140 Y-2.3570 Z#<testdepth> F#<xyVel>
+G1 X2.3571 Y-2.3571 Z#<testdepth> F#<xyVel>
+G1 X1.1785 Y-1.1785 Z#<testdepth> F#<xyVel>
+G1 X5.8926 Y-1.1785 Z#<testdepth> F#<xyVel>
+G0 Z#<safego>
+
+(MSG, Mill Upper Slot Perimeter.)
+
+G0 X5.3033 Y1.7678
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G1 X5.8926 Y1.1785 Z#<testdepth> F#<xyVel>
+G1 X1.1785 Y1.1785 Z#<testdepth> F#<xyVel>
+G1 X2.3571 Y2.3571 Z#<testdepth> F#<xyVel>
+G1 X4.7140 Y2.3570 Z#<testdepth> F#<xyVel>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G0 Z#<safego>
+(finish operation: TestContourBlock)
+(begin operation: TestContourSlots)
+
+(machine: not set, in/min)
+(TestContourSlots)
+(finish operation: TestContourSlots)
+
+o100 call
+
+
+(begin operation: T18: 1/4 Dia Longshaft)
+(machine: not set, in/min)
+(T18: 1/4 Dia Longshaft)
+(MSG, Ignore the Tool Change Process, But Close the Dialogue Window)
+M6 T18
+M3 S0
+(finish operation: T18: 1/4 Dia Longshaft)
+(begin operation: Pocket_Shape_Cylinder)
+(machine: not set, in/min)
+(Pocket_Shape_Cylinder)
+G0 Z#<safego>
+G0 X3.1990 Y1.3326
+G1 X3.1990 Y1.3326 Z#<testdepth> F#<zVel>
+G3 X2.2029 Y0.3365 Z#<testdepth> I0.2964 J-1.2925 F#<xyVel>
+G1 X3.1990 Y1.3326 Z#<testdepth> F#<xyVel>
+G2 X3.5700 Y1.3741 Z#<testdepth> I0.2763 J-0.7920 F#<xyVel>
+G1 X2.1615 Y-0.0345 Z#<testdepth> F#<xyVel>
+G3 X2.2003 Y-0.3251 Z#<testdepth> I0.6561 J-0.0602 F#<xyVel>
+G1 X3.8606 Y1.3352 Z#<testdepth> F#<xyVel>
+G2 X4.1056 Y1.2506 Z#<testdepth> I-0.0629 J-0.5788 F#<xyVel>
+G1 X2.2849 Y-0.5700 Z#<testdepth> F#<xyVel>
+G3 X2.4020 Y-0.7825 Z#<testdepth> I0.5239 J0.1503 F#<xyVel>
+G1 X4.3180 Y1.1335 Z#<testdepth> F#<xyVel>
+G1 X4.5013 Y0.9873 Z#<testdepth> F#<xyVel>
+G1 X2.5482 Y-0.9658 Z#<testdepth> F#<xyVel>
+G3 X2.7291 Y-1.1144 Z#<testdepth> I0.4160 J0.3220 F#<xyVel>
+G1 X4.6499 Y0.8064 Z#<testdepth> F#<xyVel>
+G2 X4.7721 Y0.5991 Z#<testdepth> I-0.3931 J-0.3713 F#<xyVel>
+G1 X2.9364 Y-1.2366 Z#<testdepth> F#<xyVel>
+G3 X3.1753 Y-1.3272 Z#<testdepth> I0.3179 J0.4781 F#<xyVel>
+G1 X4.8627 Y0.3602 Z#<testdepth> F#<xyVel>
+G2 X4.9096 Y0.0776 Z#<testdepth> I-0.5957 J-0.2440 F#<xyVel>
+G1 X3.4580 Y-1.3741 Z#<testdepth> F#<xyVel>
+G3 X3.8162 Y-1.3453 Z#<testdepth> I0.1162 J0.7991 F#<xyVel>
+G1 X4.8809 Y-0.2807 Z#<testdepth> F#<xyVel>
+G2 X4.5133 Y-0.9778 Z#<testdepth> I-1.1799 J0.1767 F#<xyVel>
+G0 Z#<safego>
+(finish operation: Pocket_Shape_Cylinder)
+(begin operation: Pocket_Shape_Slot_Channels)
+(machine: not set, in/min)
+(Pocket_Shape_Slot_Channels)
+G0 Z#<safego>
+
+(Pocket_Shape_Slot_Channels)
+
+(MSG, Upper Slot Boundary Cut)
+G0 Z#<safego>
+G0 X5.1385 Y1.7678
+G1 X5.1385 Y1.7678 Z#<testdepth> F#<zVel>
+G1 X4.6658 Y2.2405 Z#<testdepth> F#<xyVel>
+G1 X2.4053 Y2.2406 Z#<testdepth> F#<xyVel>
+G1 X1.4598 Y1.2950 Z#<testdepth> F#<xyVel>
+G1 X2.5743 Y1.2950 Z#<testdepth> F#<xyVel>
+G2 X4.4968 Y1.2950 Z#<testdepth> I0.9612 J-1.2762 F#<xyVel>
+G1 X5.6113 Y1.2950 Z#<testdepth> F#<xyVel>
+G1 X5.1385 Y1.7678 Z#<testdepth> F#<xyVel>
+G0 X5.1385 Y1.7678 Z#<safego>
+G0 X5.6113 Y1.2950 Z#<safego>
+G0 X5.6113 Y1.2950 Z0.1700
+G1 X5.6113 Y1.2950 Z#<testdepth> F#<zVel>
+G1 X5.4466 Y1.4597 Z#<testdepth> F#<xyVel>
+G1 X5.2818 Y1.2950 Z#<testdepth> F#<xyVel>
+G1 X4.9523 Y1.2950 Z#<testdepth> F#<xyVel>
+G1 X5.2818 Y1.6245 Z#<testdepth> F#<xyVel>
+G1 X5.1171 Y1.7892 Z#<testdepth> F#<xyVel>
+G1 X4.6228 Y1.2950 Z#<testdepth> F#<xyVel>
+G2 X4.3713 Y1.3729 Z#<testdepth> I-0.0630 J0.2415 F#<xyVel>
+G1 X4.9523 Y1.9540 Z#<testdepth> F#<xyVel>
+G1 X4.7876 Y2.1187 Z#<testdepth> F#<xyVel>
+G1 X4.1551 Y1.4863 Z#<testdepth> F#<xyVel>
+G1 X3.9104 Y1.5711 Z#<testdepth> F#<xyVel>
+G1 X4.5798 Y2.2405 Z#<testdepth> F#<xyVel>
+G1 X4.2503 Y2.2405 Z#<testdepth> F#<xyVel>
+G1 X3.6178 Y1.6080 Z#<testdepth> F#<xyVel>
+G3 X3.2676 Y1.5873 Z#<testdepth> I-0.1267 J-0.8280 F#<xyVel>
+G1 X3.9208 Y2.2405 Z#<testdepth> F#<xyVel>
+G1 X3.5913 Y2.2405 Z#<testdepth> F#<xyVel>
+G1 X2.7629 Y1.4122 Z#<testdepth> F#<xyVel>
+G2 X2.3163 Y1.2950 Z#<testdepth> I-0.3176 J0.3009 F#<xyVel>
+G1 X3.2618 Y2.2406 Z#<testdepth> F#<xyVel>
+G1 X2.9323 Y2.2406 Z#<testdepth> F#<xyVel>
+G1 X1.9867 Y1.2950 Z#<testdepth> F#<xyVel>
+G1 X1.6572 Y1.2950 Z#<testdepth> F#<xyVel>
+G1 X2.6028 Y2.2406 Z#<testdepth> F#<xyVel>
+G1 X2.4053 Y2.2406 Z#<testdepth> F#<xyVel>
+G1 X1.4598 Y1.2950 Z#<testdepth> F#<xyVel>
+G1 X1.6572 Y1.2950 Z#<testdepth> F#<xyVel>
+
+
+
+(MSG, Lower Slot Boundary Cut)
+G0 Z#<safego>
+G0 X5.6113 Y-1.2950
+G1 X5.6113 Y-1.2950 Z#<testdepth> F#<zVel>
+G1 X4.4968 Y-1.2950 Z#<testdepth> F#<xyVel>
+G2 X2.5743 Y-1.2950 Z#<testdepth> I-0.9612 J1.2761 F#<xyVel>
+G1 X1.4598 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X2.4053 Y-2.2406 Z#<testdepth> F#<xyVel>
+G1 X4.6658 Y-2.2405 Z#<testdepth> F#<xyVel>
+G1 X5.6113 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X5.6113 Y-1.2950 Z#<testdepth> F#<zVel>
+G1 X5.2818 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X5.4466 Y-1.4597 Z#<testdepth> F#<xyVel>
+G1 X5.2818 Y-1.6245 Z#<testdepth> F#<xyVel>
+G1 X4.9523 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X4.6228 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X5.1171 Y-1.7892 Z#<testdepth> F#<xyVel>
+G1 X4.9523 Y-1.9540 Z#<testdepth> F#<xyVel>
+G1 X4.3713 Y-1.3729 Z#<testdepth> F#<xyVel>
+G2 X4.1551 Y-1.4863 Z#<testdepth> I-0.3753 J0.4528 F#<xyVel>
+G1 X4.7876 Y-2.1187 Z#<testdepth> F#<xyVel>
+G1 X4.6658 Y-2.2405 Z#<testdepth> F#<xyVel>
+G1 X4.5798 Y-2.2405 Z#<testdepth> F#<xyVel>
+G1 X3.9104 Y-1.5711 Z#<testdepth> F#<xyVel>
+G2 X3.6178 Y-1.6080 Z#<testdepth> I-0.2465 J0.7750 F#<xyVel>
+G1 X4.2503 Y-2.2405 Z#<testdepth> F#<xyVel>
+G1 X3.9208 Y-2.2405 Z#<testdepth> F#<xyVel>
+G1 X3.2676 Y-1.5873 Z#<testdepth> F#<xyVel>
+G2 X2.7629 Y-1.4122 Z#<testdepth> I0.1055 J1.1187 F#<xyVel>
+G1 X3.5913 Y-2.2405 Z#<testdepth> F#<xyVel>
+G1 X3.2618 Y-2.2406 Z#<testdepth> F#<xyVel>
+G1 X2.3163 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X1.9868 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X2.9323 Y-2.2406 Z#<testdepth> F#<xyVel>
+G1 X2.6028 Y-2.2406 Z#<testdepth> F#<xyVel>
+G1 X2.4053 Y-2.2406 Z#<testdepth> F#<xyVel>
+G1 X1.4598 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X1.6572 Y-1.2950 Z#<testdepth> F#<xyVel>
+G1 X2.6028 Y-2.2406 Z#<testdepth> F#<xyVel>
+G1 X2.6028 Y-2.2406 Z#<safego>
+
+(begin operation: Drilling001)
+(machine: not set, in/min)
+
+(begin operation: Drilling001)
+(machine: not set, in/min)
+(Drilling001)
+(Begin Drilling)
+G0 X6.0000 Y0.0000 Z#<safego>
+G1 X6.0000 Y0.0000 Z#<testdepth> F#<zVel> 
+G0 X6.0000 Y0.0000 Z#<safego>
+(finish operation: Drilling001)
+
+
+
+(finish operation: Pocket_Shape_Slot_Channels)
+(begin operation: Drilling)
+(machine: not set, in/min)
+(Drilling)
+(Begin Drilling)
+G0 Z#<safego>
+G90
+G98
+G81 X6.0000 Y0.0000 Z#<testdepth> F#<zVel> R0.3937
+G80
+G0 Z#<safego>
+(finish operation: Drilling)
+(begin operation: TagDressup)
+(machine: not set, in/min)
+G0 Z#<safego>
+G0 X5.3033 Y1.7678 Z#<safego>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<zVel>
+G1 X7.0711 Y-0.0000 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y-3.5355 Z#<testdepth> F#<xyVel>
+G1 X0.0000 Y-0.0000 Z#<testdepth> F#<xyVel>
+G1 X3.5355 Y3.5355 Z#<testdepth> F#<xyVel>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G0 X5.3033 Y1.7678 Z#<safego>
+G0 X5.8926 Y-1.1785 Z#<safego>
+G1 X5.8926 Y-1.1785 Z#<testdepth> F#<zVel>
+G1 X4.7140 Y-2.3570 Z#<testdepth> F#<xyVel>
+G1 X2.3571 Y-2.3571 Z#<testdepth> F#<xyVel>
+G1 X1.1785 Y-1.1785 Z#<testdepth> F#<xyVel>
+G1 X5.8926 Y-1.1785 Z#<testdepth> F#<xyVel>
+G0 X5.8926 Y-1.1785 Z#<safego>
+G0 X5.3033 Y1.7678 Z#<safego>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<zVel>
+G1 X5.8926 Y1.1785 Z#<testdepth> F#<xyVel>
+G1 X1.1785 Y1.1785 Z#<testdepth> F#<xyVel>
+G1 X2.3571 Y2.3571 Z#<testdepth> F#<xyVel>
+G1 X4.7140 Y2.3570 Z#<testdepth> F#<xyVel>
+G1 X5.3033 Y1.7678 Z#<testdepth> F#<xyVel>
+G0 X5.3033 Y1.7678 Z#<safego>
+(finish operation: TagDressup)
+
+(begin postamble)
+G00 G53 X0 Y0 Z0  M2  ;that's all;
+%
