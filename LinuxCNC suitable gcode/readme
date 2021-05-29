@@ -1,0 +1,3 @@
+The raw *.ngc outputs from FreeCAD require a minor amount of adaptation before being suitable for emplyment on LinuxCNC production CAM.
+
+The "correct" dovetail cuts will need to be customized to suit project specific requirements/changes.
