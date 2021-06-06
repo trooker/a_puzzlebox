@@ -1,0 +1,5 @@
+#!/bin/bash
+#191117   created based on M107
+#         direcotry is relative to nexGen_09
+eog IMAGES/M108.png
+exit 0
