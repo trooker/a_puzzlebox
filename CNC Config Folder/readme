@@ -1,0 +1,13 @@
+Assuming LinuxCNC is used for executing the gcode of this project the following artifacts must be incorporated:
+
+1> CNC Machine *.ini configuration file
+One new line added to the RS274NGC section defining the UserDefinedFunctions folder if not already defined
+
+2> IMAGES Folder additons
+2.1> If the IMAGES folder does not already exist it must be created
+2.2> Two images need to be added to the folder.
+
+3> UserDefinedFunctions
+3.1> If the UserDefinedFunction folder does not already exist it must be created
+3.2> Two files need to be added to the folder.
+3.3> These two files must be set to "executable" inorder for them to be available.
